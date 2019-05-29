@@ -1,16 +1,13 @@
 package main
 
 import (
+	"github.com/ant0ine/go-json-rest/rest"
 	"go_rest/config"
 	"go_rest/controllers"
 	"go_rest/models"
 	"log"
 	"net/http"
 	"time"
-	"github.com/ant0ine/go-json-rest/rest"
-	"gopkg.in/tylerb/graceful.v1"
-
-
 )
 
 func main_rest()  {
