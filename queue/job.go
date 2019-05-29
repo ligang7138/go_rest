@@ -9,7 +9,6 @@ var (
 
 // Job represents the job to be run
 type Job struct {
-	Payload Payload
 }
 
 // A buffered channel that we can send work requests on.

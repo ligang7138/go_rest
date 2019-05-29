@@ -1,22 +1,22 @@
 package main
 
 import (
+	v "apiserver/pkg/version"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"github.com/ant0ine/go-json-rest/rest"
 	"github.com/gin-gonic/gin"
 	_ "github.com/gomodule/redigo/redis"
+	"github.com/lexkong/log"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"go_rest/config"
-	"go_rest/controllers"
 	"go_rest/models"
 	_ "go_rest/models"
-	router2 "go_rest/router"
-	"gopkg.in/tylerb/graceful.v1"
-	"io"
-	"log"
+	"go_rest/router"
+	"go_rest/router/middleWare"
 	"net/http"
+	_ "net/http/pprof"
 	"os"
 	"time"
 )
@@ -27,57 +27,80 @@ var (
 )
 
 func main() {
-	var (
-		MaxWorker = os.Getenv("MAX_WORKERS")
-		MaxQueue  = os.Getenv("MAX_QUEUE")
-		//MaxQueue  = os.Getenv("GOPATH")
-	)
-	for i:=0;i<5;i++{
-		fmt.Println(MaxWorker)
-		fmt.Println(MaxQueue)
-		time.Sleep(1*time.Second)
-	}
 
-	//fmt.Println(time.Now().UnixNano())
-	os.Exit(0)
-	// go-json-rest框架实现restful
-	api := rest.NewApi()
-	api.Use(rest.DefaultDevStack...)
-	router, err := rest.MakeRouter(
-		rest.Get("/message/:id", controllers.New().GetUserName),
-	)
-	if err != nil {
-		log.Fatal(err)
+	pflag.Parse()
+	if *version {
+		v := v.Get()
+		marshalled, err := json.MarshalIndent(&v, "", "  ")
+		if err != nil {
+			fmt.Printf("%v\n", err)
+			os.Exit(1)
+		}
+
+		fmt.Println(string(marshalled))
+		return
 	}
-	api.SetApp(router)
 
 	// init config
 	if err := config.Init(*cfg); err != nil {
 		panic(err)
 	}
 
-	models.Init()
+	// init db
+	models.DB.Init()
+	defer models.DB.Close()
 
-	server := &graceful.Server{
-		Timeout: 10 * time.Second,
-		Server: &http.Server{
-			Addr:    ":8080",
-			Handler: api.MakeHandler(),
-		},
+	// Set gin mode.
+	gin.SetMode(viper.GetString("runmode"))
+
+	// Create the Gin engine.
+	g := gin.New()
+
+	// Routes.
+	router.Load(
+		// Cores.
+		g,
+
+		// Middlwares.
+		middleware.Logging(),
+		middleware.RequestId(),
+	)
+
+	// Ping the server to make sure the router is working.
+	go func() {
+		if err := pingServer(); err != nil {
+			log.Fatal("The router has no response, or it might took too long to start up.", err)
+		}
+		log.Info("The router has been deployed successfully.")
+	}()
+	dispatcher := router.NewDispatcher(viper.GetInt("max_workers"))
+	dispatcher.Run()
+	// Start to listening the incoming requests.
+	cert := viper.GetString("tls.cert")
+	key := viper.GetString("tls.key")
+	if cert != "" && key != "" {
+		go func() {
+		log.Infof("Start to listening the incoming requests on https address: %s", viper.GetString("tls.addr"))
+		log.Info(http.ListenAndServeTLS(viper.GetString("tls.addr"), cert, key, g).Error())
+		}()
 	}
 
-	log.Fatal(server.ListenAndServe())
+	log.Infof("Start to listening the incoming requests on http address: %s", viper.GetString("addr"))
+	log.Info(http.ListenAndServe(viper.GetString("addr"), g).Error())
+}
 
+// pingServer pings the http server to make sure the router is working.
+func pingServer() error {
+	for i := 0; i < viper.GetInt("max_ping_count"); i++ {
+		// Ping the server by sending a GET request to `/health`.
+		resp, err := http.Get(viper.GetString("url") + "/sd/health")
+		if err == nil && resp.StatusCode == 200 {
+			return nil
+		}
 
-	os.Exit(3)
-
-	// gin框架实现restful
-	g := gin.Default()
-
-	//g = router.Load(g,[]gin.HandlerFunc{}...)
-	dispatcher := router2.NewDispatcher(viper.GetInt("max_workers"))
-	dispatcher.Run()
-
-	g.Run()
-	//http.ListenAndServe(":8000",g)
+		// Sleep for a second to continue the next ping.
+		log.Info("Waiting for the router, retry in 1 second.")
+		time.Sleep(time.Second)
+	}
+	return errors.New("Cannot connect to the router.")
 }

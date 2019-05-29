@@ -5,6 +5,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/swaggo/gin-swagger"
 	"github.com/swaggo/gin-swagger/swaggerFiles"
+	"go_rest/controllers"
 	"go_rest/controllers/sd"
 	"go_rest/controllers/user"
 	"go_rest/router/middleWare"
@@ -51,5 +52,11 @@ func Load(g *gin.Engine,mw ...gin.HandlerFunc) *gin.Engine {
 		svcd.GET("/cpu", sd.CPUCheck)
 		svcd.GET("/ram", sd.RAMCheck)
 	}
+
+	channel := g.Group("/chan")
+	{
+		channel.POST("/add", controllers.PayloadHandler)
+	}
+
 	return g
 }

@@ -1,10 +1,10 @@
 package user
 
 import (
-	. "apiserver/handler"
-	"apiserver/model"
-	"apiserver/pkg/errno"
-	"apiserver/util"
+	"go_rest/models"
+	"go_rest/pkg/errno"
+	"go_rest/util"
+	. "go_rest/util"
 
 	"github.com/gin-gonic/gin"
 	"github.com/lexkong/log"
@@ -27,7 +27,7 @@ func Create(c *gin.Context) {
 		return
 	}
 
-	u := model.UserModel{
+	u := models.UserModel{
 		Username: r.Username,
 		Password: r.Password,
 	}
