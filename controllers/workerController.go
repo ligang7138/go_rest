@@ -14,9 +14,9 @@ type PayloadCollection struct {
 }
 
 type Payload struct {
-	// [redacted]
+	Job queue.Job `json:"job"`
 }
-
+// {"version":"1.0.0","token":"aaab","data":[{"job":{"name":"dawang"}}]}
 func PayloadHandler(c *gin.Context) {
 
 	// Read the body into a string for json decoding
@@ -25,25 +25,19 @@ func PayloadHandler(c *gin.Context) {
 	if err != nil {
 		//w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		//w.WriteHeader(http.StatusBadRequest)
-		c.Header("Content-Type", "application/json; charset=UTF-8")
-
+		SendResponse(c, err, "错误")
 		return
 	}
 
 	// Go through each payload and queue items individually to be posted to S3
-	/*for _, payload := range content.Payloads {
+	for _, payload := range content.Payloads {
 
 		// let's create a job with the payload
-		work := queue.Job{}
+		work := payload.Job
 
 		// Push the work onto the queue.
 		queue.JobQueue <- work
-	}*/
-	work := queue.Job{}
-	job := make(chan queue.Job,10)
-
-	// Push the work onto the queue.
-	job <- work
+	}
 
 	SendResponse(c, nil, "成功")
 }

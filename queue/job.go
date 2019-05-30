@@ -9,7 +9,9 @@ var (
 
 // Job represents the job to be run
 type Job struct {
+	Name string `json:"name"`
 }
 
 // A buffered channel that we can send work requests on.
-var JobQueue chan Job
+var JobQueue = make(chan Job,10)
+//var JobQueue chan Job

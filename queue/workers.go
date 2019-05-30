@@ -1,6 +1,9 @@
 package queue
 
-import "fmt"
+import (
+	"fmt"
+	"github.com/spf13/viper"
+)
 
 // Worker represents the worker that executes the job
 type Worker struct {
@@ -12,30 +15,32 @@ type Worker struct {
 func NewWorker(workerPool chan chan Job) *Worker {
 	return &Worker{
 		WorkerPool: workerPool,
-		JobChannel: make(chan Job),
+		JobChannel: make(chan Job ,viper.GetInt("max_queue")),
 		quit:       make(chan bool)}
 }
 
 // Start method starts the run loop for the worker, listening for a quit channel in
 // case we need to stop it
 func (w Worker) Start() {
-	fmt.Println("w s")
+
 	go func() {
 		for {
 			// register the current worker into the worker queue.
 			w.WorkerPool <- w.JobChannel
-			//fmt.Println(w.WorkerPool)
-			select {
-			case job := <-w.JobChannel:
-				// we have received a work request.
-				/*if err := job.Payload.UploadToS3(); err != nil {
-					log.Errorf("Error uploading to S3: %s", err.Error())
-				}*/
 
-				fmt.Println("w-",job)
-			case <-w.quit:
-				// we have received a signal to stop
-				return
+			select {
+				case job := <-w.JobChannel:
+					// we have received a work request. 处理业务逻辑
+					/*if err := job.Payload.UploadToS3(); err != nil {
+						log.Errorf("Error uploading to S3: %s", err.Error())
+						w.JobChannel <- job
+					}*/
+
+					fmt.Println("w-",job)
+				case <-w.quit:
+					fmt.Println("w-")
+					// we have received a signal to stop
+					return
 			}
 		}
 	}()
