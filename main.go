@@ -1,7 +1,6 @@
 package main
 
 import (
-	v "go_rest/pkg/version"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,10 +10,11 @@ import (
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 	"go_rest/config"
-	"go_rest/models"
 	_ "go_rest/models"
+	v "go_rest/pkg/version"
 	"go_rest/router"
 	"go_rest/router/middleWare"
+	"go_rest/storage/mysql"
 	"net/http"
 	_ "net/http/pprof"
 	"os"
@@ -47,8 +47,8 @@ func main() {
 	}
 
 	// init db
-	models.DB.Init()
-	defer models.DB.Close()
+	mysql.DB.Init()
+	defer mysql.DB.Close()
 
 	// Set gin mode.
 	gin.SetMode(viper.GetString("runmode"))

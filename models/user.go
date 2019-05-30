@@ -2,6 +2,7 @@ package models
 
 import (
 	"fmt"
+	"go_rest/storage/mysql"
 	"time"
 
 	"go_rest/pkg/auth"
@@ -22,37 +23,47 @@ func (c *UserModel) TableName() string {
 }
 
 type User struct {
-	AId uint64 `json:"a_id";gorm:"primary_key"`
-	AName string `json:"a_name";gorm:"type:varchar(35);not null`
-	ALoginTime time.Time `json:"a_name"`
+	AId uint64 `json:"id";gorm:"primary_key;"`
+	AName string `json:"name";gorm:"type:varchar(35);not null`
+	APwd string `json:"passwd";gorm:"type:varchar(35);not null`
+	ALoginTime time.Time `json:"login_time"`
+	AStatus int8 `json:"status";gorm:"type:tinyint(1);not null;default 0`
+	ARoles int8 `json:"roles";gorm:"type:tinyint(1);not null;default 0`
+	AType int8  `json:"type";gorm:"type:tinyint(1);not null;default 0`
+	AAddTime time.Time `json:"add_time";gorm:"type:varchar(35);not null`
+	OpName string `json:"op_name";gorm:"type:varchar(35);not null`
+	OpTime string `json:"op_time";gorm:"type:date(35);not null`
+
 	ATrueName string `json:"a_true_name";gorm:"type:varchar(35);not null`
 	//Title     string `gorm:"type:varchar(128);not null;index:title_idx"`
 }
+
+var db = mysql.DB.Self
 func (c *User) TableName() string {
 	return "admin_users"
 }
 
 // Create creates a new user account.
 func (u *UserModel) Create() error {
-	return DB.Self.Create(&u).Error
+	return db.Create(&u).Error
 }
 
 // DeleteUser deletes the user by the user identifier.
 func DeleteUser(id uint64) error {
 	user := UserModel{}
 	user.BaseModel.Id = id
-	return DB.Self.Delete(&user).Error
+	return db.Delete(&user).Error
 }
 
 // Update updates an user account information.
 func (u *UserModel) Update() error {
-	return DB.Self.Save(u).Error
+	return db.Save(u).Error
 }
 
 // GetUser gets an user by the user identifier.
 func GetUser(username string) (*UserModel, error) {
 	u := &UserModel{}
-	d := DB.Self.Where("username = ?", username).First(&u)
+	d := db.Where("username = ?", username).First(&u)
 	return u, d.Error
 }
 
@@ -66,11 +77,11 @@ func ListUser(username string, offset, limit int) ([]*UserModel, uint64, error) 
 	var count uint64
 
 	where := fmt.Sprintf("username like '%%%s%%'", username)
-	if err := DB.Self.Model(&UserModel{}).Where(where).Count(&count).Error; err != nil {
+	if err := db.Model(&UserModel{}).Where(where).Count(&count).Error; err != nil {
 		return users, count, err
 	}
 
-	if err := DB.Self.Where(where).Offset(offset).Limit(limit).Order("id desc").Find(&users).Error; err != nil {
+	if err := db.Where(where).Offset(offset).Limit(limit).Order("id desc").Find(&users).Error; err != nil {
 		return users, count, err
 	}
 
@@ -97,7 +108,7 @@ func (u *UserModel) Validate() error {
 
 func GetById(id uint64) *User {
 	u := &User{}
-	DB.Self.Where("a_id = ?", id).First(u)
+	db.Where("a_id = ?", id).First(u)
 	return u
 }
 
@@ -105,7 +116,7 @@ func GetBySql(sql string,id uint64) (*User,error) {
 	u := &User{}
 	//DB.Exec(sql,id)
 	//row := DB.Where("a_id = ?", id).Select("a_login_time, a_name").Row() // (*sql.Row)
-	DB.Self.Raw("" +
+	db.Raw("" +
 		"select u.a_name, i.a_true_name,u.a_login_time from admin_users u left join admin_user_info i on u.a_id = i.a_id where u.a_id = ?" +
 		"", id).Row().Scan(u)
 

@@ -1,4 +1,4 @@
-package models
+package mysql
 
 import (
 	"fmt"
@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-
+// 不同的数据库
 type Database struct {
 	Self   *gorm.DB
 	Docker *gorm.DB
