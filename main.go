@@ -1,7 +1,7 @@
 package main
 
 import (
-	v "apiserver/pkg/version"
+	v "go_rest/pkg/version"
 	"encoding/json"
 	"errors"
 	"fmt"

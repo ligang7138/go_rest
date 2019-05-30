@@ -1,7 +1,6 @@
 package router
 
 import (
-	"github.com/spf13/viper"
 	"go_rest/queue"
 )
 
@@ -16,7 +15,7 @@ func NewDispatcher(maxWorkers int) *Dispatcher {
 	pool := make(chan chan queue.Job, maxWorkers)
 	return &Dispatcher{
 		WorkerPool: pool,
-		maxWorkers: viper.GetInt("max_workers"),
+		maxWorkers: maxWorkers,
 	}
 }
 

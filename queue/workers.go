@@ -23,7 +23,7 @@ func (w Worker) Start() {
 	go func() {
 		for {
 			// register the current worker into the worker queue.
-			//w.WorkerPool <- w.JobChannel
+			w.WorkerPool <- w.JobChannel
 			//fmt.Println(w.WorkerPool)
 			select {
 			case job := <-w.JobChannel:
